@@ -8,7 +8,7 @@ The following libraries are used:
 https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
 3) SDL (For Keyboard Inputs)
 ```
-
+sudo apt-get -y install libsdl2-dev
 ```
 5) ODEINT (For solving Ordinary Differential Equations)
 ```
