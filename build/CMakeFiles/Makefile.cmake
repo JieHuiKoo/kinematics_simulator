@@ -11,6 +11,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.22.1/CMakeCCompiler.cmake"
   "CMakeFiles/3.22.1/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.22.1/CMakeSystem.cmake"
+  "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config-version.cmake"
+  "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig-version.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVConfig.cmake"
   "/usr/local/lib/cmake/opencv4/OpenCVModules-release.cmake"

@@ -308,6 +308,9 @@ OPENCV_DIR:PATH=OPENCV_DIR-NOTFOUND
 //The directory containing a CMake configuration file for OpenCV.
 OpenCV_DIR:PATH=/usr/local/lib/cmake/opencv4
 
+//The directory containing a CMake configuration file for SDL2.
+SDL2_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/SDL2
+
 //Name of the computer/site where compile is being run
 SITE:STRING=jiehui-ZenBook-UX533FD
 
