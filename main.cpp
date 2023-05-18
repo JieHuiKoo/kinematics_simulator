@@ -35,44 +35,6 @@ int main() {
         return 0;
       }
 
-      // Mouse Input
-      else if (Event.type == SDL_MOUSEBUTTONDOWN) {
-        if (Event.button.button == SDL_BUTTON_LEFT) {
-          SDL_ShowCursor(SDL_ENABLE);
-          AppWindow.GrabMouse();
-        } else if (Event.button.button == SDL_BUTTON_RIGHT) {
-          if (KeyboardState[SDL_SCANCODE_SPACE]) {
-            std::cout << "Spacebar is pressed\n";
-          } else {
-            std::cout << "Spacebar is not pressed\n";
-          }
-        }
-      } else if (Event.type == SDL_MOUSEBUTTONUP) {
-        if (Event.button.button == SDL_BUTTON_LEFT) {
-          SDL_ShowCursor(SDL_ENABLE);
-          AppWindow.FreeMouse();
-        }
-      } else if (Event.type == SDL_MOUSEWHEEL) {
-        AppWindow.ChangeWindowSize(Event.wheel.y * 3);
-        AppWindow.SetTitle("Focused");
-      } else if (Event.type == SDL_MOUSEMOTION) [[likely]] {
-        AppWindow.SetBackgroundColor(
-          Event.motion.x * 255 / AppWindow.GetWindowWidth(),
-          Event.motion.y * 255 / AppWindow.GetWindowHeight(),
-          0
-        );
-      } else if (Event.type == SDL_WINDOWEVENT) {
-        if (
-          Event.window.event == SDL_WINDOWEVENT_ENTER
-        ) {
-          AppWindow.SetTitle("Focused");
-        } else if (
-          Event.window.event == SDL_WINDOWEVENT_LEAVE
-        ) {
-          AppWindow.SetTitle("Unfocused");
-        }
-      }
-
       // Keyboard Input
       else if (Event.type == SDL_KEYDOWN) {
         if (Event.key.keysym.sym == SDLK_UP) {
