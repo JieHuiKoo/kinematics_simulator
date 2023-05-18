@@ -7,7 +7,7 @@ public:
     SDL_Init(SDL_INIT_VIDEO);
 
     SDLWindow = SDL_CreateWindow(
-      "Hello World",
+      "Control Window",
       SDL_WINDOWPOS_UNDEFINED,
       SDL_WINDOWPOS_UNDEFINED,
       windowWidth, windowHeight, 0
@@ -91,8 +91,8 @@ public:
 private:
   SDL_Window* SDLWindow { nullptr };
   SDL_Surface* SDLWindowSurface { nullptr };
-  int windowWidth { 300 };
-  int windowHeight { 300 };
+  int windowWidth { 200 };
+  int windowHeight { 200 };
 
   int bgRed { 40 };
   int bgGreen { 40 };

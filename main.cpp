@@ -1,6 +1,4 @@
 // #include <opencv2/opencv.hpp>
-// #include <stdio.h>
-// using namespace cv;
 // int main(int argc, char** argv)
 // {
 //     if (argc != 2) {
@@ -18,56 +16,88 @@
 //     waitKey(0);
 //     return 0;
 // }
-// Window.h
-#include <SDL.h>
 #include <iostream>
 #include "include/Window.h"
+#include "include/Vehicle.h"
+
+std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
+{
+  // An array that stores the bool state of (1) UP, (2) Down, (3) Left, (4) Right keys
+  std::vector<bool> KeyStateArray(4, false);
+
+  bool pressed = false;
+
+  // If Up key pressed
+  if (KeyboardState[SDL_SCANCODE_UP])
+  {
+    KeyStateArray[0] = true;
+    pressed = true;
+    
+    std::cout<<"Up";
+  }
+  
+  // If Down key pressed
+  if (KeyboardState[SDL_SCANCODE_DOWN])
+  {
+    KeyStateArray[1] = true;
+    pressed = true;
+
+    std::cout<< "Down";
+  }
+  
+  // If Left/Right key pressed
+  if (!(KeyboardState[SDL_SCANCODE_LEFT] && KeyboardState[SDL_SCANCODE_RIGHT]))
+  {
+    if (KeyboardState[SDL_SCANCODE_LEFT])
+    {
+      KeyStateArray[2] = true;
+      pressed = true;
+
+      std::cout<< "Left";  
+    }
+    if (KeyboardState[SDL_SCANCODE_RIGHT])
+    {
+      KeyStateArray[3] = true;
+      pressed = true;
+
+      std::cout<< "Right";
+    }
+  }
+
+  if (pressed) std::cout << "\n === \n";
+  
+  return KeyStateArray;
+}
 
 int main() {
   Window AppWindow;
-  auto KeyboardState = SDL_GetKeyboardState(nullptr);
   SDL_Event Event;
+  cv::namedWindow("Kinematics Simulator", cv::WINDOW_AUTOSIZE);
+
+  // Declare Variables
+  double time_step = 0.0001; // Time step
+  cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
+  PoseFrame car_model_intiial_pose (map.cols/2, map.rows/2, 0);
+  Vehicle car_model(10, 3, car_model_intiial_pose);
+
+  auto KeyboardState = SDL_GetKeyboardState(nullptr);
+
   while(true) {
+
+    // Get the Key Presses and store in array
+    GetKeyStateArray(KeyboardState);
+    car_model.DrawPosition(&map, 20);
+
     while (SDL_PollEvent(&Event)) {
       // System
       if (Event.type == SDL_QUIT) [[unlikely]] {
         SDL_Quit();
         return 0;
       }
-
-      // Keyboard Input
-      else if (Event.type == SDL_KEYDOWN) {
-        if (Event.key.keysym.sym == SDLK_UP) {
-          AppWindow.MoveRelative(0, -10);
-        } else if (Event.key.keysym.sym == SDLK_DOWN) {
-          AppWindow.MoveRelative(0, 10);
-        } else if (Event.key.keysym.sym == SDLK_LEFT) {
-          AppWindow.MoveRelative(-10, 0);
-        } else if (Event.key.keysym.sym == SDLK_RIGHT) {
-          AppWindow.MoveRelative(10, 0);
-        } else if (Event.key.keysym.sym == SDLK_RETURN) {
-          int x, y;
-          Uint32 Buttons { SDL_GetMouseState(&x, &y) };
-
-          std::cout << "Mouse is at " << x << ", " << y;
-          if ((Buttons & SDL_BUTTON_LMASK)) {
-            std::cout << " - Left Button is pressed";
-          }
-          if ((Buttons & SDL_BUTTON_RMASK)) {
-            std::cout << " - Right Button is pressed";
-          }
-          std::cout << "\n";
-        } else {
-          std::cout
-            << "Key Pressed! Key Code: "
-            << Event.key.keysym.sym
-            << ", Key Name: "
-            << SDL_GetKeyName(Event.key.keysym.sym)
-            << '\n';
-        }
-      }
     }
     AppWindow.Update();
     AppWindow.RenderFrame();
+    cv::imshow("Kinematics Simulator", map);
+    cv::waitKey(1);
   }
 }
