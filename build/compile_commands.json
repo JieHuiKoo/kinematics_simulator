@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/jiehui/kinematics_simulator/build",
-  "command": "/usr/bin/g++  -I/usr/include/SDL2 -isystem /usr/local/include/opencv4 -g -o CMakeFiles/kinematics_simulator.dir/main.cpp.o -c /home/jiehui/kinematics_simulator/main.cpp",
-  "file": "/home/jiehui/kinematics_simulator/main.cpp"
-}
-]
