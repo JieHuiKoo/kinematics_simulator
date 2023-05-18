@@ -74,10 +74,29 @@ int main() {
   SDL_Event Event;
   cv::namedWindow("Kinematics Simulator", cv::WINDOW_AUTOSIZE);
 
-  // Declare Variables
+  // ====== Declare Variables =====
+
+  // Declare time step on each CPU while loop tick
   double time_step = 0.0001; // Time step
+
+  // Declare Map
   cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
-  PoseFrame car_model_intiial_pose (map.cols/2, map.rows/2, 0);
+  // |============== MAP ================|  /|\ +ve y       
+  // | X(0,0)                            |   |         
+  // |                                   | 
+  // |                                   | 
+  // |                                   |    
+  // |                                   |   
+  // |                                   |      
+  // |===================================|               /|\
+  // |--> +ve x                             ----> 0 deg   |  90deg
+  // | Note: Opencv Y axis is inverted
+
+  // Annotate the centre of the map
+  cv::circle(map, cv::Point(round(map.cols/2), round(map.rows/2)), 4, cv::Scalar(255, 255, 255), 2);
+
+  // Define a vehicle model
+  PoseFrame car_model_intiial_pose (map.cols/2, -map.rows/2, 0);
   Vehicle car_model(10, 3, car_model_intiial_pose);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);

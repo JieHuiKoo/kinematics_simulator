@@ -6,8 +6,8 @@ class Vehicle {
 public:
     void DrawPosition(cv::Mat *map, float scale) {
         
-        cv::Point pt1 = cv::Point(round(this->veh_pose_in_globalMap.x), round(this->veh_pose_in_globalMap.y-this->veh_width/2));
-        cv::Point pt2 = cv::Point(round(this->veh_pose_in_globalMap.x + this->veh_length*scale), round(this->veh_pose_in_globalMap.y+this->veh_width/2*scale));
+        cv::Point pt1 = cv::Point(round(this->veh_pose_in_globalMap.x), -round(this->veh_pose_in_globalMap.y-this->veh_width/2*scale));
+        cv::Point pt2 = cv::Point(round(this->veh_pose_in_globalMap.x + this->veh_length*scale), -round(this->veh_pose_in_globalMap.y+this->veh_width/2*scale));
 
         cv::rectangle(*map,pt1,pt2,cv::Scalar(0, 255, 0));
     }
@@ -15,8 +15,8 @@ public:
     void UpdatePosition() {
 
     }
-    void SetMovementState() {
-
+    void UpdateMovementState() {
+        
     }
 
     Vehicle() : veh_length(10), veh_width(10) { }
@@ -36,7 +36,7 @@ private:
   // /|\ (0,0) ->X=======================                          y
   //  |          -                      -                          ^
   //  |          -                      -                          |
-  //  |          -X <-Veh Frame     D   -     ---------->          |-->x
+  //  |          X <-Veh Frame      D   -     ---------->          |-->x
   // Width       -                      -
   //  |          -                      -
   // \|/         =======================X <- (Length, Width)      D = Sensor facing right
