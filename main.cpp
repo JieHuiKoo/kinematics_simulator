@@ -1,24 +1,7 @@
-// #include <opencv2/opencv.hpp>
-// int main(int argc, char** argv)
-// {
-//     if (argc != 2) {
-//         printf("usage: DisplayImage.out <Image_Path>\n");
-//         return -1;
-//     }
-//     Mat image;
-//     image = imread(argv[1], 1);
-//     if (!image.data) {
-//         printf("No image data \n");
-//         return -1;
-//     }
-//     namedWindow("Display Image", WINDOW_AUTOSIZE);  
-//     imshow("Display Image", image);
-//     waitKey(0);
-//     return 0;
-// }
 #include <iostream>
 #include "include/Window.h"
 #include "include/Vehicle.h"
+#include <boost/numeric/odeint.hpp> 
 
 std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
 {
@@ -81,31 +64,33 @@ int main() {
 
   // Declare Map
   cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
-  // |============== MAP ================|  /|\ +ve y       
+  // |============== MAP ================|  /|\ +ve y, 90 deg       
   // | X(0,0)                            |   |         
   // |                                   | 
   // |                                   | 
   // |                                   |    
   // |                                   |   
   // |                                   |      
-  // |===================================|               /|\
-  // |--> +ve x                             ----> 0 deg   |  90deg
+  // |===================================|          
+  // |--> +ve x, 0deg                           
   // | Note: Opencv Y axis is inverted
 
   // Annotate the centre of the map
   cv::circle(map, cv::Point(round(map.cols/2), round(map.rows/2)), 4, cv::Scalar(255, 255, 255), 2);
 
   // Define a vehicle model
-  PoseFrame car_model_intiial_pose (map.cols/2, -map.rows/2, 0);
-  Vehicle car_model(10, 3, car_model_intiial_pose);
+  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
+  Vehicle CarModel(10, 3, CarModel_initial_pose);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
   while(true) {
 
     // Get the Key Presses and store in array
-    GetKeyStateArray(KeyboardState);
-    car_model.DrawPosition(&map, 20);
+    
+    CarModel.DrawPosition(&map, 20);
+    std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
+    CarModel.UpdateMovementState(movement_state_array);
 
     while (SDL_PollEvent(&Event)) {
       // System

@@ -7,6 +7,7 @@ find_package(SDL2 REQUIRED)
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${SDL2_INCLUDE_DIRS}
+    ${BOOST_INCLUDE_DIRS}
     )
 
 add_executable(kinematics_simulator main.cpp)
@@ -15,6 +16,7 @@ target_link_libraries(
     kinematics_simulator 
     ${OpenCV_LIBS}
     ${SDL2_LIBRARIES}
+    ${Boost_LIBRARIES}
 )
 
 include(CTest)
