@@ -76,11 +76,11 @@ int main() {
   // | Note: Opencv Y axis is inverted
 
   // Annotate the centre of the map
-  cv::circle(map, cv::Point(round(map.cols/2), round(map.rows/2)), 4, cv::Scalar(255, 255, 255), 2);
+  cv::circle(map, cv::Point((map.cols/2), (map.rows/2)), 6, cv::Scalar(0, 0, 255), -1);
 
   // Define a vehicle model
-  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
-  Vehicle CarModel(10, 3, CarModel_initial_pose);
+  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 1.5708);
+  Vehicle CarModel(10, 3, CarModel_initial_pose, 20);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
@@ -88,7 +88,7 @@ int main() {
 
     // Get the Key Presses and store in array
     
-    CarModel.DrawPosition(&map, 20);
+    CarModel.DrawPosition(&map);
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
     CarModel.UpdateMovementState(movement_state_array);
 
