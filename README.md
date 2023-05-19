@@ -16,4 +16,4 @@ sudo apt-get install libboost-all-dev
 ```
 
 A screenshot of the kinematics simulator.
-![image](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/bd91a429-1f02-464f-992b-9516c5a1d732)
+![image](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/4e45ede9-e05a-464f-9298-640819c5ff01)
