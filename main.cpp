@@ -11,21 +11,24 @@ std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
   bool pressed = false;
 
   // If Up key pressed
-  if (KeyboardState[SDL_SCANCODE_UP])
+  if (!(KeyboardState[SDL_SCANCODE_UP] && KeyboardState[SDL_SCANCODE_DOWN]))
   {
-    KeyStateArray[0] = true;
-    pressed = true;
+    if (KeyboardState[SDL_SCANCODE_UP])
+    {
+      KeyStateArray[0] = true;
+      pressed = true;
+      
+      std::cout<<"Up";
+    }
     
-    std::cout<<"Up";
-  }
-  
-  // If Down key pressed
-  if (KeyboardState[SDL_SCANCODE_DOWN])
-  {
-    KeyStateArray[1] = true;
-    pressed = true;
+    // If Down key pressed
+    if (KeyboardState[SDL_SCANCODE_DOWN])
+    {
+      KeyStateArray[1] = true;
+      pressed = true;
 
-    std::cout<< "Down";
+      std::cout<< "Down";
+    }
   }
   
   // If Left/Right key pressed
@@ -63,6 +66,7 @@ int main() {
   double time_step = 0.0001; // Time step
 
   // Declare Map
+  cv::Size map_size = cv::Size (1000, 1000);
   cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
   // |============== MAP ================|  /|\ +ve y, 90 deg       
   // | X(0,0)                            |   |         
@@ -79,19 +83,21 @@ int main() {
   cv::circle(map, cv::Point((map.cols/2), (map.rows/2)), 6, cv::Scalar(0, 0, 255), -1);
 
   // Define a vehicle model
-  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0.785398);
+  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
   Vehicle CarModel(10, 3, CarModel_initial_pose, 20);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
-  while(true) {
+  while(true) 
+  {
+    // Clear the map
+    map = cv::Mat::zeros(map_size, CV_8UC3);
 
     // Get the Key Presses and store in array
-    
-    CarModel.DrawPosition(&map);
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
     CarModel.UpdateMovementState(movement_state_array);
-
+    CarModel.UpdatePosition();
+    CarModel.DrawPosition(&map);
     while (SDL_PollEvent(&Event)) {
       // System
       if (Event.type == SDL_QUIT) [[unlikely]] {
