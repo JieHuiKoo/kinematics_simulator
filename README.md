@@ -12,4 +12,4 @@ sudo apt-get -y install libsdl2-dev
 ```
 
 A screenshot of the kinematics simulator.
-![image](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/4e45ede9-e05a-464f-9298-640819c5ff01)
+![ezgif com-video-to-gif](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/440f5ec3-7dd5-499a-8246-bc8cd40712a6)
