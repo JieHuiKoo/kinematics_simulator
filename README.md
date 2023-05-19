@@ -12,5 +12,8 @@ sudo apt-get -y install libsdl2-dev
 ```
 5) ODEINT (For solving Ordinary Differential Equations)
 ```
-
+sudo apt-get install libboost-all-dev
 ```
+
+A screenshot of the kinematics simulator.
+![image](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/bd91a429-1f02-464f-992b-9516c5a1d732)
