@@ -6,20 +6,20 @@ class Vehicle {
 public:
     void DrawPosition(cv::Mat *map) {
         
-        PoseFrame vehCentre_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->centreIndicator_in_vehFrame);
-        PoseFrame vehLeftIndicator_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->leftIndicator_in_vehFrame);
-        PoseFrame vehRightIndicator_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->rightIndicator_in_vehFrame);
-        PoseFrame vehForwardIndicator_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->forwardIndicator_in_vehFrame);
+        PoseFrame vehCentre_in_globalMap            = TransformFromVehFrameToGlobalMapFrame(this->centreIndicator_in_vehFrame);
+        PoseFrame vehLeftIndicator_in_globalMap     = TransformFromVehFrameToGlobalMapFrame(this->leftIndicator_in_vehFrame);
+        PoseFrame vehRightIndicator_in_globalMap    = TransformFromVehFrameToGlobalMapFrame(this->rightIndicator_in_vehFrame);
+        PoseFrame vehForwardIndicator_in_globalMap  = TransformFromVehFrameToGlobalMapFrame(this->forwardIndicator_in_vehFrame);
         PoseFrame vehBackwardIndicator_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->backwardIndicator_in_vehFrame);
-        PoseFrame TOFsensor1_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
+        PoseFrame TOFsensor1_in_globalMap           = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
 
-        cv::Point veh_position_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(this->veh_pose_in_globalMap.x, this->veh_pose_in_globalMap.y));
-        cv::Point vehCentreIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehCentre_in_globalMap.x, vehCentre_in_globalMap.y));
-        cv::Point vehLeftIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehLeftIndicator_in_globalMap.x, vehLeftIndicator_in_globalMap.y));
-        cv::Point vehRightIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehRightIndicator_in_globalMap.x, vehRightIndicator_in_globalMap.y));
-        cv::Point vehForwardIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehForwardIndicator_in_globalMap.x, vehForwardIndicator_in_globalMap.y));
+        cv::Point veh_position_in_OpenCVMap         = ConvertMapToOpenCVPoint(cv::Point(this->veh_pose_in_globalMap.x, this->veh_pose_in_globalMap.y));
+        cv::Point vehCentreIndicator_in_OpenCVMap   = ConvertMapToOpenCVPoint(cv::Point(vehCentre_in_globalMap.x, vehCentre_in_globalMap.y));
+        cv::Point vehLeftIndicator_in_OpenCVMap     = ConvertMapToOpenCVPoint(cv::Point(vehLeftIndicator_in_globalMap.x, vehLeftIndicator_in_globalMap.y));
+        cv::Point vehRightIndicator_in_OpenCVMap    = ConvertMapToOpenCVPoint(cv::Point(vehRightIndicator_in_globalMap.x, vehRightIndicator_in_globalMap.y));
+        cv::Point vehForwardIndicator_in_OpenCVMap  = ConvertMapToOpenCVPoint(cv::Point(vehForwardIndicator_in_globalMap.x, vehForwardIndicator_in_globalMap.y));
         cv::Point vehBackwardIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehBackwardIndicator_in_globalMap.x, vehBackwardIndicator_in_globalMap.y));
-        cv::Point TOFsensor1_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(TOFsensor1_in_globalMap.x, TOFsensor1_in_globalMap.y));
+        cv::Point TOFsensor1_in_OpenCVMap           = ConvertMapToOpenCVPoint(cv::Point(TOFsensor1_in_globalMap.x, TOFsensor1_in_globalMap.y));
         
         cv::circle(*map, veh_position_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, vehCentreIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
@@ -29,9 +29,19 @@ public:
         cv::circle(*map, vehBackwardIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, TOFsensor1_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
 
-        cv::Size veh_size = cv::Size(this->veh_length, this->veh_width);
-        std::cout << vehCentre_in_globalMap.orientation << std::endl;
+        cv::Size veh_size                           = cv::Size(this->veh_length, this->veh_width);
+        cv::Size left_right_indicator_size          = cv::Size(this->veh_length*0.1, this->veh_width*0.25);
+        cv::Size forward_backward_indicator_size    = cv::Size(this->veh_length*0.1, this->veh_width);
+        cv::Size TOFsensor1_size                    = cv::Size(this->veh_length*0.1, this->veh_width*0.1);
+        
         DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, veh_size, vehCentre_in_globalMap.orientation);
+        DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation);
+        DrawRotatedRect(map, vehRightIndicator_in_OpenCVMap, left_right_indicator_size, vehRightIndicator_in_globalMap.orientation);
+        DrawRotatedRect(map, vehForwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehForwardIndicator_in_globalMap.orientation);
+        DrawRotatedRect(map, vehBackwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehBackwardIndicator_in_globalMap.orientation);
+        DrawRotatedRect(map, TOFsensor1_in_OpenCVMap, TOFsensor1_size, TOFsensor1_in_globalMap.orientation);
+
+
     }
     
     void UpdatePosition(double scale) {
@@ -58,15 +68,15 @@ public:
         this->veh_width = veh_width*scale; 
         this->veh_pose_in_globalMap = veh_pose_in_globalMap;
 
-        this->TOFsensor1_in_vehFrame.x = veh_length*0.7*scale;
+        this->TOFsensor1_in_vehFrame.x = veh_length*0.75*scale;
         this->TOFsensor1_in_vehFrame.y = 0;
         this->TOFsensor1_in_vehFrame.orientation = 0;
 
-        this->leftIndicator_in_vehFrame.x = veh_length*0.7*scale;
+        this->leftIndicator_in_vehFrame.x = veh_length*0.75*scale;
         this->leftIndicator_in_vehFrame.y = -veh_width/4*scale;
         this->leftIndicator_in_vehFrame.orientation = 0;
 
-        this->rightIndicator_in_vehFrame.x = veh_length*0.7*scale;
+        this->rightIndicator_in_vehFrame.x = veh_length*0.75*scale;
         this->rightIndicator_in_vehFrame.y = veh_width/4*scale;
         this->rightIndicator_in_vehFrame.orientation = 0;
 

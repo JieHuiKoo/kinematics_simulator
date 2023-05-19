@@ -79,7 +79,7 @@ int main() {
   cv::circle(map, cv::Point((map.cols/2), (map.rows/2)), 6, cv::Scalar(0, 0, 255), -1);
 
   // Define a vehicle model
-  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 1.5708);
+  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0.785398);
   Vehicle CarModel(10, 3, CarModel_initial_pose, 20);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
