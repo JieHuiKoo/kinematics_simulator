@@ -62,9 +62,6 @@ int main() {
 
   // ====== Declare Variables =====
 
-  // Declare time step on each CPU while loop tick
-  double time_step = 0.0001; // Time step
-
   // Declare Map
   cv::Size map_size = cv::Size (1000, 1000);
   cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
@@ -79,8 +76,12 @@ int main() {
   // |--> +ve x, 0deg                           
   // | Note: Opencv Y axis is inverted
 
-  // Annotate the centre of the map
-  cv::circle(map, cv::Point((map.cols/2), (map.rows/2)), 6, cv::Scalar(0, 0, 255), -1);
+  // Declare Walls of map
+  std::vector<std::array <cv::Point, 2>> obstacles;
+  obstacles.push_back({cv::Point(100, -100), cv::Point(900, -100)});
+  obstacles.push_back({cv::Point(900, -100), cv::Point(900, -900)});
+  obstacles.push_back({cv::Point(900, -900), cv::Point(100, -900)});
+  obstacles.push_back({cv::Point(100, -900), cv::Point(100, -100)});
 
   // Define a vehicle model
   PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
@@ -90,14 +91,18 @@ int main() {
 
   while(true) 
   {
-    // Clear the map
-    map = cv::Mat::zeros(map_size, CV_8UC3);
+    // Create car_drawing
+    cv::Mat car_drawing = cv::Mat::zeros(map_size, CV_8UC3);
 
     // Get the Key Presses and store in array
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
+
     CarModel.UpdateMovementState(movement_state_array);
     CarModel.UpdatePosition();
-    CarModel.DrawPosition(&map);
+    CarModel.DrawPosition(&car_drawing);
+    CarModel.AnnotateSensorReading(obstacles, &car_drawing, &map);
+
+
     while (SDL_PollEvent(&Event)) {
       // System
       if (Event.type == SDL_QUIT) [[unlikely]] {
@@ -107,7 +112,12 @@ int main() {
     }
     AppWindow.Update();
     AppWindow.RenderFrame();
-    cv::imshow("Kinematics Simulator", map);
+
+    //Overlay car onto map
+    cv::Mat output;
+    cv::bitwise_or(map, car_drawing, output);
+
+    cv::imshow("Kinematics Simulator", output);
     cv::waitKey(1);
   }
 }

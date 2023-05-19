@@ -104,6 +104,50 @@ public:
         else this->turn_amt_Radians = 0;
     }
 
+    void AnnotateSensorReading(const std::vector<std::array<cv::Point, 2>> &obstacles, cv::Mat *car_drawing, cv::Mat *map)
+    {
+        int num_of_obstacles = obstacles.size();
+        PoseFrame TOFsensor1_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
+
+        std::vector<double> sensor_forward_dist_to_obstacles;
+        std::vector<bool> is_sensor_pointingAt_wall;
+
+        for (int i = 0; i < num_of_obstacles; i++)
+        {
+            cv::Point endpoint1 = obstacles[i][0];
+            cv::Point endpoint2 = obstacles[i][1];
+
+            cv::line(*car_drawing, ConvertMapToOpenCVPoint(endpoint1), ConvertMapToOpenCVPoint(endpoint2), cv::Scalar(0, 255, 0), 2);
+
+            double sensor_forward_dist_to_obstacle = ((endpoint2.y - endpoint1.y)*(endpoint1.x-TOFsensor1_in_globalMap.x) - (endpoint2.x - endpoint1.x)*(endpoint1.y-TOFsensor1_in_globalMap.y))/((endpoint2.y-endpoint1.y)*cos(-TOFsensor1_in_globalMap.orientation)-(endpoint2.x-endpoint1.x)*sin(-TOFsensor1_in_globalMap.orientation));
+            sensor_forward_dist_to_obstacles.push_back(sensor_forward_dist_to_obstacle);
+
+            cv::Point position_of_wall_hit = cv::Point(
+                TOFsensor1_in_globalMap.x + sensor_forward_dist_to_obstacle*cos(-TOFsensor1_in_globalMap.orientation),
+                TOFsensor1_in_globalMap.y + sensor_forward_dist_to_obstacle*sin(-TOFsensor1_in_globalMap.orientation));
+
+            // If sensor hits the wall and the distance is more than 0
+            if (CalculateEuclideanDist(position_of_wall_hit, endpoint1) + CalculateEuclideanDist(position_of_wall_hit, endpoint2) == CalculateEuclideanDist(endpoint1, endpoint2) &&
+                sensor_forward_dist_to_obstacle > 0                                               )
+            {
+                cv::line(*car_drawing, ConvertMapToOpenCVPoint(position_of_wall_hit), ConvertMapToOpenCVPoint(cv::Point(TOFsensor1_in_globalMap.x, TOFsensor1_in_globalMap.y)), cv::Scalar(255, 255, 255), 2);
+                cv::circle(*map, ConvertMapToOpenCVPoint(position_of_wall_hit), 4, cv::Scalar(255, 255, 255), -1);
+
+                cv::putText(*car_drawing, std::to_string(int(sensor_forward_dist_to_obstacle)), ConvertMapToOpenCVPoint(cv::Point(position_of_wall_hit.x + 10, position_of_wall_hit.y+10)), cv::FONT_HERSHEY_SIMPLEX, 
+                   1, cv::Scalar(255,255,255), 2, cv::LINE_AA);
+
+                is_sensor_pointingAt_wall.push_back(true);
+            }
+            else
+            {
+                is_sensor_pointingAt_wall.push_back(false);
+            }
+
+            std::cout << i << " Dist To Wall: " << sensor_forward_dist_to_obstacle << " X: " << position_of_wall_hit.x << " Y: " << position_of_wall_hit.y << " Detected: " << is_sensor_pointingAt_wall[i] << std::endl;
+        }
+        std::cout << "\n\n===\n\n" << std::endl;
+    }
+
     Vehicle() : veh_length(10), veh_width(10) { }
     Vehicle(double veh_length, double veh_width, PoseFrame veh_pose_in_globalMap, double scale) 
     {
@@ -172,9 +216,8 @@ private:
     {
         cv::Point point_in_OpenCV;
 
-        point_in_OpenCV.x = point_in_map.x ;
-        point_in_OpenCV.y = point_in_map.y - point_in_map.y*2; // Translate downwards as opencv y axis is inverted
-        // std::cout << point_in_OpenCV.x << std::endl;
+        point_in_OpenCV.x = point_in_map.x;
+        point_in_OpenCV.y = -point_in_map.y;// - point_in_map.y*2; // Translate downwards as opencv y axis is inverted
         return point_in_OpenCV;
     }
 
@@ -190,17 +233,6 @@ private:
             dist_from_point_of_rotation*sin(-this->veh_pose_in_globalMap.orientation + angle_offset)+this->veh_pose_in_globalMap.x, 
             dist_from_point_of_rotation*cos(-this->veh_pose_in_globalMap.orientation + angle_offset)+this->veh_pose_in_globalMap.y, 
             input_frame.orientation-veh_pose_in_globalMap.orientation);
-
-        return input_poseFrame_in_globalMap;
-    }
-
-    PoseFrame TransformFromVehFrameToGlobalMapFrame1 (PoseFrame input_frame)
-    {
-        cv::Point input_frame_position = cv::Point(input_frame.x, input_frame.y);
-        cv::Point input_frame_position_in_globalMap = cv::Point(this->veh_pose_in_globalMap.x + input_frame_position.x, this->veh_pose_in_globalMap.y + input_frame_position.y);
-        double dist_from_point_of_rotation = CalculateEuclideanDist(input_frame_position_in_globalMap, cv::Point(this->veh_pose_in_globalMap.x, this->veh_pose_in_globalMap.y));
-
-        PoseFrame input_poseFrame_in_globalMap(input_frame_position_in_globalMap.x, input_frame_position_in_globalMap.y, 0);
 
         return input_poseFrame_in_globalMap;
     }
@@ -230,12 +262,4 @@ private:
         }
 
     }
-
-    // TODO:
-    double wheel_diam;
-
-    PoseFrame leftFrontWheel_frame;
-    PoseFrame rightFrontWheel_frame;
-    PoseFrame leftBackWheel_frame;
-    PoseFrame rightBackWheel_frame;
   };
