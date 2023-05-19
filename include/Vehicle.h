@@ -34,19 +34,62 @@ public:
         cv::Size forward_backward_indicator_size    = cv::Size(this->veh_length*0.1, this->veh_width);
         cv::Size TOFsensor1_size                    = cv::Size(this->veh_length*0.1, this->veh_width*0.1);
         
-        DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, veh_size, vehCentre_in_globalMap.orientation);
-        DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation);
-        DrawRotatedRect(map, vehRightIndicator_in_OpenCVMap, left_right_indicator_size, vehRightIndicator_in_globalMap.orientation);
-        DrawRotatedRect(map, vehForwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehForwardIndicator_in_globalMap.orientation);
-        DrawRotatedRect(map, vehBackwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehBackwardIndicator_in_globalMap.orientation);
-        DrawRotatedRect(map, TOFsensor1_in_OpenCVMap, TOFsensor1_size, TOFsensor1_in_globalMap.orientation);
+        bool forward_fill = false;
+        bool backward_fill = false;
+        bool left_fill = false;
+        bool right_fill = false;
 
+        // Draw Forward Back Indicators
+        if (this->velocity_MetersPerSec > 0)
+        {
+            forward_fill = true;
+        }
+        else if (this->velocity_MetersPerSec < 0)
+        {
+            backward_fill = true;
+        }
 
+        // Draw Turning indicators
+        if (this->turn_amt_Radians > 0) // Left
+        {
+            left_fill = true;
+            this->leftIndicator_in_vehFrame.orientation = -0.785398;
+            this->rightIndicator_in_vehFrame.orientation = -0.785398;
+
+        }
+        else if (this->turn_amt_Radians < 0) // Right
+        {
+            right_fill = true;
+            this->leftIndicator_in_vehFrame.orientation = 0.785398;
+            this->rightIndicator_in_vehFrame.orientation = 0.785398;
+        }
+        else if (this->turn_amt_Radians == 0) // Straight
+        {
+            right_fill = false;
+            this->leftIndicator_in_vehFrame.orientation = 0;
+            this->rightIndicator_in_vehFrame.orientation = 0;
+        }
+
+        DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, veh_size, vehCentre_in_globalMap.orientation, false);
+        DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation, left_fill);
+        DrawRotatedRect(map, vehRightIndicator_in_OpenCVMap, left_right_indicator_size, vehRightIndicator_in_globalMap.orientation, right_fill);
+        DrawRotatedRect(map, vehForwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehForwardIndicator_in_globalMap.orientation, forward_fill);
+        DrawRotatedRect(map, vehBackwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehBackwardIndicator_in_globalMap.orientation, backward_fill);
+        DrawRotatedRect(map, TOFsensor1_in_OpenCVMap, TOFsensor1_size, TOFsensor1_in_globalMap.orientation, false);
     }
     
-    void UpdatePosition(double scale) {
+    void UpdatePosition() {
         
+        double veh_distBtwnFrontBackWheel = this->leftIndicator_in_vehFrame.x;
+        double turn_radius_Meters = abs(veh_distBtwnFrontBackWheel/tan(this->turn_amt_Radians)) + this->veh_width/2;
         
+        double front_phi_Radians = atan(veh_distBtwnFrontBackWheel/turn_radius_Meters);
+
+        if (this->turn_amt_Radians < 0) front_phi_Radians = -front_phi_Radians;
+
+        this->veh_pose_in_globalMap.x = this->veh_pose_in_globalMap.x + this->velocity_MetersPerSec*cos(this->veh_pose_in_globalMap.orientation);
+        this->veh_pose_in_globalMap.y = this->veh_pose_in_globalMap.y + this->velocity_MetersPerSec*sin(this->veh_pose_in_globalMap.orientation);
+        this->veh_pose_in_globalMap.orientation = this->veh_pose_in_globalMap.orientation + this->velocity_MetersPerSec/veh_distBtwnFrontBackWheel*front_phi_Radians;
     }
     void UpdateMovementState(const std::vector<bool>& movement_state_vector) {
         
@@ -167,14 +210,25 @@ private:
         return sqrt((pow((pt1.x-pt2.x),2)) + (pow((pt1.y-pt2.y),2)));
     }
 
-    void DrawRotatedRect(cv::Mat *image, cv::Point center, cv::Size size, double rotation_Radians)
-    {
+    void DrawRotatedRect(cv::Mat *image, cv::Point center, cv::Size size, double rotation_Radians, bool fill)
+    {       
         double rotation_degrees = rotation_Radians*180/M_PI;
+        
+        cv::Scalar colour = cv::Scalar(0,255,0);
+
+        cv::Point2f vertices2f[4];
         cv::RotatedRect rRect = cv::RotatedRect(center, size, rotation_degrees);
-        cv::Point2f vertices[4];
-        rRect.points(vertices);
+        rRect.points(vertices2f);
+
         for (int i = 0; i < 4; i++)
-            cv::line(*image, vertices[i], vertices[(i+1)%4], cv::Scalar(0,255,0), 2);
+            cv::line(*image, vertices2f[i], vertices2f[(i+1)%4], colour, 2);
+        if (fill)
+        {   
+            cv::Point vertices[4];    
+            for(int i = 0; i < 4; ++i) vertices[i] = vertices2f[i];
+            cv::fillConvexPoly(*image, vertices, 4, colour);
+        }
+
     }
 
     // TODO:
