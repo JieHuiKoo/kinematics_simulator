@@ -148,8 +148,48 @@ public:
         std::cout << "\n\n===\n\n" << std::endl;
     }
 
+    void AddPathWaypoints(cv::Point waypoint, cv::Size map_size)
+    {
+        this->waypoints.push_back(waypoint);
+        
+        this->waypoints_map = cv::Mat::zeros(map_size, CV_8UC1); // Declare b/w map of size 1000x1000 pixels
+
+        int num_of_waypoints = this->waypoints.size();
+
+        for (int i=0; i<num_of_waypoints-1; i++)
+        {
+            // Draw the waypoints within an internal map
+            cv::line(this->waypoints_map, ConvertMapToOpenCVPoint(this->waypoints[i]), ConvertMapToOpenCVPoint(this->waypoints[i+1]), 255, 2);
+        }
+    }
+
+    void DrawWaypoints(cv::Mat *image)
+    {
+        int num_of_waypoints = this->waypoints.size();
+
+        for (int i=0; i<num_of_waypoints-1; i++)
+        {
+            cv::line(*image, ConvertMapToOpenCVPoint(this->waypoints[i]), ConvertMapToOpenCVPoint(this->waypoints[i+1]), cv::Scalar(0, 255, 255), 2);
+            cv::circle(*image, ConvertMapToOpenCVPoint(this->waypoints[i]), 4, cv::Scalar(110, 110, 255), -1);
+            cv::circle(*image, ConvertMapToOpenCVPoint(this->waypoints[i+1]), 4, cv::Scalar(110, 110, 255), -1);
+        }
+    }
+
+    void AnnotatePathPursuit(cv::Mat *car_drawing)
+    {
+        PoseFrame centre_of_lookahead_GlobalMapFrame = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
+        cv::Point centre_of_lookahead_point_OpenCVFrame = ConvertMapToOpenCVPoint(cv::Point(centre_of_lookahead_GlobalMapFrame.x, centre_of_lookahead_GlobalMapFrame.y));
+        cv::circle(*car_drawing, centre_of_lookahead_point_OpenCVFrame, this->look_ahead_dist_Meters, cv::Scalar(110, 110, 255), 4);
+
+        cv::Mat car_map = *car_drawing;
+        cv::Point target_point = FindLookAheadIntersection(car_map.size(), centre_of_lookahead_point_OpenCVFrame);
+
+        cv::circle(*car_drawing, target_point, 10, cv::Scalar(110, 110, 255), 4);
+
+    }
+
     Vehicle() : veh_length(10), veh_width(10) { }
-    Vehicle(double veh_length, double veh_width, PoseFrame veh_pose_in_globalMap, double scale) 
+    Vehicle(double veh_length, double veh_width, PoseFrame veh_pose_in_globalMap, double scale, double look_ahead_dist_Meters)
     {
         this->veh_length = veh_length*scale; 
         this->veh_width = veh_width*scale; 
@@ -178,6 +218,8 @@ public:
         this->centreIndicator_in_vehFrame.x = veh_length*0.5*scale;
         this->centreIndicator_in_vehFrame.y = 0;
         this->centreIndicator_in_vehFrame.orientation = 0;
+
+        this->look_ahead_dist_Meters = look_ahead_dist_Meters*scale;
     } 
 
 private:
@@ -203,6 +245,8 @@ private:
     double velocity_MetersPerSec;
     double turn_amt_Radians; // Left +ve, right-ve
 
+    double look_ahead_dist_Meters;
+
     // === Frames ===
     // Frames with respect to veh_frame
     PoseFrame TOFsensor1_in_vehFrame;
@@ -211,6 +255,9 @@ private:
     PoseFrame forwardIndicator_in_vehFrame;
     PoseFrame backwardIndicator_in_vehFrame;
     PoseFrame centreIndicator_in_vehFrame;
+
+    std::vector<cv::Point> waypoints;
+    cv::Mat waypoints_map;
 
     cv::Point ConvertMapToOpenCVPoint(cv::Point point_in_map) 
     {
@@ -261,5 +308,73 @@ private:
             cv::fillConvexPoly(*image, vertices, 4, colour);
         }
 
+    }
+
+    cv::Point FindLookAheadIntersection(cv::Size map_size, cv::Point centre_of_lookahead_point)
+    {
+        cv::Mat look_ahead_circle_map = cv::Mat::zeros(map_size, CV_8UC1); // Declare map of size 1000x1000 pixels
+
+        cv::circle(look_ahead_circle_map, centre_of_lookahead_point, this->look_ahead_dist_Meters, 255, 4);
+        
+        cv::Mat intersection_map;
+        cv::bitwise_and(look_ahead_circle_map, this->waypoints_map, intersection_map);
+
+        std::vector<cv::Point> intersections = FindBlobCentroids(&intersection_map);
+
+        cv::Point intersection = FindValidIntersection(intersections, centre_of_lookahead_point);
+
+
+        cv::bitwise_or(look_ahead_circle_map, this->waypoints_map, look_ahead_circle_map);
+
+        cv::imshow("look_ahead_circle_map", look_ahead_circle_map);
+
+        cv::waitKey(1);
+
+        cv::imshow("intersection_map", intersection_map);
+        cv::waitKey(1);
+
+        return intersection;
+    }
+
+    cv::Point FindValidIntersection(std::vector<cv::Point> intersections, cv::Point center_of_lookahead)
+    {       
+        std::vector<cv::Point> right_intersections;
+        std::vector<cv::Point> left_intersections;
+
+        double min_dist = std::numeric_limits<double>::max();;
+        cv::Point valid_intersection;
+        for (int i = 0; i<intersections.size(); i++)
+        {
+            cv::Point intersection = intersections[i];
+            double distance_btwn_wheelbase_and_intersection = CalculateEuclideanDist(center_of_lookahead, intersection);
+            
+            if (min_dist > distance_btwn_wheelbase_and_intersection)
+            {
+                min_dist = distance_btwn_wheelbase_and_intersection;
+                valid_intersection = intersection;
+            }
+        }
+        
+        return valid_intersection;
+    }
+
+    std::vector<cv::Point> FindBlobCentroids (cv::Mat *image)
+    {
+        std::vector<std::vector<cv::Point>> contours;
+        std::vector<cv::Vec4i> hierarchy;
+
+        cv::findContours(*image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+        // get the moments
+        std::vector<cv::Moments> mu(contours.size());
+        for( int i = 0; i<contours.size(); i++ )
+        { mu[i] = moments( contours[i], false ); }
+
+        // get the centroid of figures.
+        std::vector<cv::Point> mc(contours.size());
+        for( int i = 0; i<contours.size(); i++)
+        { mc[i] = cv::Point( mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00 ); }
+
+        return mc;
     }
   };

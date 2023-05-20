@@ -85,7 +85,17 @@ int main() {
 
   // Define a vehicle model
   PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
-  Vehicle CarModel(10, 3, CarModel_initial_pose, 20);
+  Vehicle CarModel(10, 3, CarModel_initial_pose, 20, 5);
+
+  // Define waypoints
+  CarModel.AddPathWaypoints(cv::Point(200, -250), map_size);
+  CarModel.AddPathWaypoints(cv::Point(400, -200), map_size);
+  CarModel.AddPathWaypoints(cv::Point(500, -250), map_size);
+  CarModel.AddPathWaypoints(cv::Point(500, -450), map_size);
+  CarModel.AddPathWaypoints(cv::Point(550, -660), map_size);
+  CarModel.AddPathWaypoints(cv::Point(700, -800), map_size);
+  CarModel.AddPathWaypoints(cv::Point(850, -700), map_size);
+  CarModel.AddPathWaypoints(cv::Point(900, -450), map_size);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
@@ -101,7 +111,8 @@ int main() {
     CarModel.UpdatePosition();
     CarModel.DrawPosition(&car_drawing);
     CarModel.AnnotateSensorReading(obstacles, &car_drawing, &map);
-
+    CarModel.DrawWaypoints(&car_drawing);
+    CarModel.AnnotatePathPursuit(&car_drawing);
 
     while (SDL_PollEvent(&Event)) {
       // System
