@@ -2,10 +2,26 @@
 #include "PoseFrame.h"
 #include <math.h> 
 
+class SensorReading {
+
+public:
+    double sensor_forward_dist_to_obstacle;
+    cv::Point position_of_wall_hit;
+    cv::Mat layer_of_wall_hits;
+
+    SensorReading() : sensor_forward_dist_to_obstacle(0), position_of_wall_hit(0) { }
+
+    void GenerateLayerOfWallHits(cv::Size layer_size)
+    {
+        this->layer_of_wall_hits = cv::Mat::zeros(layer_size, CV_8UC3);
+    }
+};
+
 class Vehicle {
 public:
     void DrawPosition(cv::Mat *map) {
         
+        // Transform vehicle components in veh frame to globalMapFrame
         PoseFrame vehCentre_in_globalMap            = TransformFromVehFrameToGlobalMapFrame(this->centreIndicator_in_vehFrame);
         PoseFrame vehLeftIndicator_in_globalMap     = TransformFromVehFrameToGlobalMapFrame(this->leftIndicator_in_vehFrame);
         PoseFrame vehRightIndicator_in_globalMap    = TransformFromVehFrameToGlobalMapFrame(this->rightIndicator_in_vehFrame);
@@ -13,6 +29,7 @@ public:
         PoseFrame vehBackwardIndicator_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->backwardIndicator_in_vehFrame);
         PoseFrame TOFsensor1_in_globalMap           = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
 
+        // Convert GlobalMapFrame position to OpenCVFrame (y axis is inverted)
         cv::Point veh_position_in_OpenCVMap         = ConvertMapToOpenCVPoint(cv::Point(this->veh_pose_in_globalMap.x, this->veh_pose_in_globalMap.y));
         cv::Point vehCentreIndicator_in_OpenCVMap   = ConvertMapToOpenCVPoint(cv::Point(vehCentre_in_globalMap.x, vehCentre_in_globalMap.y));
         cv::Point vehLeftIndicator_in_OpenCVMap     = ConvertMapToOpenCVPoint(cv::Point(vehLeftIndicator_in_globalMap.x, vehLeftIndicator_in_globalMap.y));
@@ -21,6 +38,7 @@ public:
         cv::Point vehBackwardIndicator_in_OpenCVMap = ConvertMapToOpenCVPoint(cv::Point(vehBackwardIndicator_in_globalMap.x, vehBackwardIndicator_in_globalMap.y));
         cv::Point TOFsensor1_in_OpenCVMap           = ConvertMapToOpenCVPoint(cv::Point(TOFsensor1_in_globalMap.x, TOFsensor1_in_globalMap.y));
         
+        // Draw Center Points of Veh Components in OpenCVFrame
         cv::circle(*map, veh_position_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, vehCentreIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, vehLeftIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
@@ -28,11 +46,6 @@ public:
         cv::circle(*map, vehForwardIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, vehBackwardIndicator_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
         cv::circle(*map, TOFsensor1_in_OpenCVMap, 4, cv::Scalar(255, 255, 255), -1);
-
-        cv::Size veh_size                           = cv::Size(this->veh_length, this->veh_width);
-        cv::Size left_right_indicator_size          = cv::Size(this->veh_length*0.1, this->veh_width*0.25);
-        cv::Size forward_backward_indicator_size    = cv::Size(this->veh_length*0.1, this->veh_width);
-        cv::Size TOFsensor1_size                    = cv::Size(this->veh_length*0.1, this->veh_width*0.1);
         
         bool forward_fill = false;
         bool backward_fill = false;
@@ -70,19 +83,18 @@ public:
             this->rightIndicator_in_vehFrame.orientation = 0;
         }
 
-        DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, veh_size, vehCentre_in_globalMap.orientation, false);
-        DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation, left_fill);
-        DrawRotatedRect(map, vehRightIndicator_in_OpenCVMap, left_right_indicator_size, vehRightIndicator_in_globalMap.orientation, right_fill);
-        DrawRotatedRect(map, vehForwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehForwardIndicator_in_globalMap.orientation, forward_fill);
-        DrawRotatedRect(map, vehBackwardIndicator_in_OpenCVMap, forward_backward_indicator_size, vehBackwardIndicator_in_globalMap.orientation, backward_fill);
-        DrawRotatedRect(map, TOFsensor1_in_OpenCVMap, TOFsensor1_size, TOFsensor1_in_globalMap.orientation, false);
+        DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, this->veh_size, vehCentre_in_globalMap.orientation, false);
+        DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, this->left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation, left_fill);
+        DrawRotatedRect(map, vehRightIndicator_in_OpenCVMap, this->left_right_indicator_size, vehRightIndicator_in_globalMap.orientation, right_fill);
+        DrawRotatedRect(map, vehForwardIndicator_in_OpenCVMap, this->forward_backward_indicator_size, vehForwardIndicator_in_globalMap.orientation, forward_fill);
+        DrawRotatedRect(map, vehBackwardIndicator_in_OpenCVMap, this->forward_backward_indicator_size, vehBackwardIndicator_in_globalMap.orientation, backward_fill);
+        DrawRotatedRect(map, TOFsensor1_in_OpenCVMap, this->TOFsensor1_size, TOFsensor1_in_globalMap.orientation, false);
     }
     
     void UpdatePosition() {
         
         double veh_distBtwnFrontBackWheel = this->leftIndicator_in_vehFrame.x;
         double turn_radius_Meters = abs(veh_distBtwnFrontBackWheel/tan(this->turn_amt_Radians)) + this->veh_width/2;
-        
         double front_phi_Radians = atan(veh_distBtwnFrontBackWheel/turn_radius_Meters);
 
         if (this->turn_amt_Radians < 0) front_phi_Radians = -front_phi_Radians;
@@ -94,17 +106,17 @@ public:
     void UpdateMovementState(const std::vector<bool>& movement_state_vector) {
         
         // Update velocity
-        if (movement_state_vector[0]) this->velocity_MetersPerSec = 1;
-        else if (movement_state_vector[1]) this->velocity_MetersPerSec = -1;
+        if (movement_state_vector[0]) this->velocity_MetersPerSec = 1.3;
+        else if (movement_state_vector[1]) this->velocity_MetersPerSec = -1.3;
         else this->velocity_MetersPerSec = 0;
 
         // Update turn_amt
-        if (movement_state_vector[2]) this->turn_amt_Radians = 0.785398; //45deg
-        else if (movement_state_vector[3]) this->turn_amt_Radians = -0.785398; //45deg
+        if (movement_state_vector[2]) this->turn_amt_Radians = 1.309; //75 deg
+        else if (movement_state_vector[3]) this->turn_amt_Radians = -11.309; //75deg
         else this->turn_amt_Radians = 0;
     }
 
-    void AnnotateSensorReading(const std::vector<std::array<cv::Point, 2>> &obstacles, cv::Mat *car_drawing, cv::Mat *map)
+    void CalculateSensorReading(const std::vector<std::array<cv::Point, 2>> &obstacles)
     {
         int num_of_obstacles = obstacles.size();
         PoseFrame TOFsensor1_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
@@ -114,28 +126,22 @@ public:
 
         for (int i = 0; i < num_of_obstacles; i++)
         {
-            cv::Point endpoint1 = obstacles[i][0];
-            cv::Point endpoint2 = obstacles[i][1];
+            cv::Point wall_endpoint1 = obstacles[i][0];
+            cv::Point wall_endpoint2 = obstacles[i][1];   
 
-            cv::line(*car_drawing, ConvertMapToOpenCVPoint(endpoint1), ConvertMapToOpenCVPoint(endpoint2), cv::Scalar(0, 255, 0), 2);
-
-            double sensor_forward_dist_to_obstacle = ((endpoint2.y - endpoint1.y)*(endpoint1.x-TOFsensor1_in_globalMap.x) - (endpoint2.x - endpoint1.x)*(endpoint1.y-TOFsensor1_in_globalMap.y))/((endpoint2.y-endpoint1.y)*cos(-TOFsensor1_in_globalMap.orientation)-(endpoint2.x-endpoint1.x)*sin(-TOFsensor1_in_globalMap.orientation));
+            double sensor_forward_dist_to_obstacle = ((wall_endpoint2.y - wall_endpoint1.y)*(wall_endpoint1.x-TOFsensor1_in_globalMap.x) - (wall_endpoint2.x - wall_endpoint1.x)*(wall_endpoint1.y-TOFsensor1_in_globalMap.y))/((wall_endpoint2.y-wall_endpoint1.y)*cos(-TOFsensor1_in_globalMap.orientation)-(wall_endpoint2.x-wall_endpoint1.x)*sin(-TOFsensor1_in_globalMap.orientation));
             sensor_forward_dist_to_obstacles.push_back(sensor_forward_dist_to_obstacle);
 
             cv::Point position_of_wall_hit = cv::Point(
                 TOFsensor1_in_globalMap.x + sensor_forward_dist_to_obstacle*cos(-TOFsensor1_in_globalMap.orientation),
                 TOFsensor1_in_globalMap.y + sensor_forward_dist_to_obstacle*sin(-TOFsensor1_in_globalMap.orientation));
 
-            // If sensor hits the wall and the distance is more than 0
-            if (CalculateEuclideanDist(position_of_wall_hit, endpoint1) + CalculateEuclideanDist(position_of_wall_hit, endpoint2) == CalculateEuclideanDist(endpoint1, endpoint2) &&
-                sensor_forward_dist_to_obstacle > 0                                               )
+            // If sensor is between end points and the distance is more than 0
+            if (CalculateEuclideanDist(position_of_wall_hit, wall_endpoint1) + CalculateEuclideanDist(position_of_wall_hit, wall_endpoint2) == CalculateEuclideanDist(wall_endpoint1, wall_endpoint2) &&
+                sensor_forward_dist_to_obstacle > 0)
             {
-                cv::line(*car_drawing, ConvertMapToOpenCVPoint(position_of_wall_hit), ConvertMapToOpenCVPoint(cv::Point(TOFsensor1_in_globalMap.x, TOFsensor1_in_globalMap.y)), cv::Scalar(255, 255, 255), 2);
-                cv::circle(*map, ConvertMapToOpenCVPoint(position_of_wall_hit), 4, cv::Scalar(255, 255, 255), -1);
-
-                cv::putText(*car_drawing, std::to_string(int(sensor_forward_dist_to_obstacle)), ConvertMapToOpenCVPoint(cv::Point(position_of_wall_hit.x + 10, position_of_wall_hit.y+10)), cv::FONT_HERSHEY_SIMPLEX, 
-                   1, cv::Scalar(255,255,255), 2, cv::LINE_AA);
-
+                this->TOFsensor1_Reading.sensor_forward_dist_to_obstacle = sensor_forward_dist_to_obstacle;
+                this->TOFsensor1_Reading.position_of_wall_hit = position_of_wall_hit;
                 is_sensor_pointingAt_wall.push_back(true);
             }
             else
@@ -146,6 +152,32 @@ public:
             std::cout << i << " Dist To Wall: " << sensor_forward_dist_to_obstacle << " X: " << position_of_wall_hit.x << " Y: " << position_of_wall_hit.y << " Detected: " << is_sensor_pointingAt_wall[i] << std::endl;
         }
         std::cout << "\n\n===\n\n" << std::endl;
+    }
+
+    void DrawSensorReading(cv::Mat *car_layer)
+    {
+        // Draw Sensor Line Of Sight
+        PoseFrame TOFsensor1_in_GlobalMapFrame = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
+        cv::Point TOFsensor1_position_in_GlobalMapFrame = cv::Point(TOFsensor1_in_GlobalMapFrame.x, TOFsensor1_in_GlobalMapFrame.y);
+        cv::line(*car_layer, ConvertMapToOpenCVPoint(TOFsensor1_position_in_GlobalMapFrame), ConvertMapToOpenCVPoint(this->TOFsensor1_Reading.position_of_wall_hit), cv::Scalar(255, 255, 255), 2);
+
+        // Draw Sensor Position of wall hit
+        cv::circle(*car_layer, ConvertMapToOpenCVPoint(this->TOFsensor1_Reading.position_of_wall_hit), 4, cv::Scalar(255, 255, 255), -1);
+
+        // Draw Sensor Text Reading
+        cv::putText(*car_layer, 
+                    std::to_string(int(this->TOFsensor1_Reading.sensor_forward_dist_to_obstacle)), 
+                    ConvertMapToOpenCVPoint(cv::Point(this->TOFsensor1_Reading.position_of_wall_hit.x + 10, this->TOFsensor1_Reading.position_of_wall_hit.y + 10)), 
+                    cv::FONT_HERSHEY_SIMPLEX, 
+                    1, 
+                    cv::Scalar(255,255,255), 
+                    2, 
+                    cv::LINE_AA);  
+
+        // Record Sensor Position 
+        cv::circle(this->TOFsensor1_Reading.layer_of_wall_hits, ConvertMapToOpenCVPoint(this->TOFsensor1_Reading.position_of_wall_hit), 4, cv::Scalar(255, 255, 255), -1);
+
+        cv::bitwise_or(this->TOFsensor1_Reading.layer_of_wall_hits, *car_layer, *car_layer);
     }
 
     void AddPathWaypoints(cv::Point waypoint, cv::Size map_size)
@@ -189,7 +221,7 @@ public:
     }
 
     Vehicle() : veh_length(10), veh_width(10) { }
-    Vehicle(double veh_length, double veh_width, PoseFrame veh_pose_in_globalMap, double scale, double look_ahead_dist_Meters)
+    Vehicle(double veh_length, double veh_width, PoseFrame veh_pose_in_globalMap, double scale, double look_ahead_dist_Meters, cv::Size base_environment_map_size)
     {
         this->veh_length = veh_length*scale; 
         this->veh_width = veh_width*scale; 
@@ -220,6 +252,13 @@ public:
         this->centreIndicator_in_vehFrame.orientation = 0;
 
         this->look_ahead_dist_Meters = look_ahead_dist_Meters*scale;
+
+        this->TOFsensor1_Reading.GenerateLayerOfWallHits(base_environment_map_size);
+
+        this->veh_size                           = cv::Size(this->veh_length, this->veh_width);
+        this->left_right_indicator_size          = cv::Size(this->veh_length*0.1, this->veh_width*0.25);
+        this->forward_backward_indicator_size    = cv::Size(this->veh_length*0.1, this->veh_width);
+        this->TOFsensor1_size                    = cv::Size(this->veh_length*0.1, this->veh_width*0.1);
     } 
 
 private:
@@ -240,6 +279,12 @@ private:
   
     double veh_length;
     double veh_width;
+
+    cv::Size veh_size;
+    cv::Size left_right_indicator_size;
+    cv::Size forward_backward_indicator_size;
+    cv::Size TOFsensor1_size;
+
     PoseFrame veh_pose_in_globalMap;
 
     double velocity_MetersPerSec;
@@ -258,13 +303,16 @@ private:
 
     std::vector<cv::Point> waypoints;
     cv::Mat waypoints_map;
+    
+    SensorReading TOFsensor1_Reading;
 
+    // TODO: Remove repeated code from map.h
     cv::Point ConvertMapToOpenCVPoint(cv::Point point_in_map) 
     {
         cv::Point point_in_OpenCV;
 
         point_in_OpenCV.x = point_in_map.x;
-        point_in_OpenCV.y = -point_in_map.y;// - point_in_map.y*2; // Translate downwards as opencv y axis is inverted
+        point_in_OpenCV.y = point_in_map.y - point_in_map.y*2; // Translate downwards as opencv y axis is inverted (Not sure why inverting point_in_map also works)
         return point_in_OpenCV;
     }
 
