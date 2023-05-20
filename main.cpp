@@ -2,6 +2,7 @@
 #include "include/Window.h"
 #include "include/Vehicle.h"
 #include <boost/numeric/odeint.hpp> 
+#include "include/Map.h"
 
 std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
 {
@@ -63,56 +64,44 @@ int main() {
   // ====== Declare Variables =====
 
   // Declare Map
-  cv::Size map_size = cv::Size (1000, 1000);
-  cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
-  // |============== MAP ================|  /|\ +ve y, 90 deg       
-  // | X(0,0)                            |   |         
-  // |                                   | 
-  // |                                   | 
-  // |                                   |    
-  // |                                   |   
-  // |                                   |      
-  // |===================================|          
-  // |--> +ve x, 0deg                           
-  // | Note: Opencv Y axis is inverted
-
-  // Declare Walls of map
-  std::vector<std::array <cv::Point, 2>> obstacles;
-  obstacles.push_back({cv::Point(100, -100), cv::Point(900, -100)});
-  obstacles.push_back({cv::Point(900, -100), cv::Point(900, -900)});
-  obstacles.push_back({cv::Point(900, -900), cv::Point(100, -900)});
-  obstacles.push_back({cv::Point(100, -900), cv::Point(100, -100)});
+  Map base_environment(cv::Size(1000, 1000));
+  base_environment.AddObstacle({cv::Point(100, -100), cv::Point(900, -100)});
+  base_environment.AddObstacle({cv::Point(900, -100), cv::Point(900, -900)});
+  base_environment.AddObstacle({cv::Point(900, -900), cv::Point(100, -900)});
+  base_environment.AddObstacle({cv::Point(100, -900), cv::Point(100, -100)});
 
   // Define a vehicle model
-  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
-  Vehicle CarModel(10, 3, CarModel_initial_pose, 20, 5);
+  PoseFrame CarModel_initial_pose (base_environment.map_size.width/2, -base_environment.map_size.height/2, 0);
+  Vehicle CarModel(10, 3, CarModel_initial_pose, 20, 3, base_environment.map_size);
 
   // Define waypoints
-  CarModel.AddPathWaypoints(cv::Point(200, -250), map_size);
-  CarModel.AddPathWaypoints(cv::Point(400, -200), map_size);
-  CarModel.AddPathWaypoints(cv::Point(500, -250), map_size);
-  CarModel.AddPathWaypoints(cv::Point(500, -450), map_size);
-  CarModel.AddPathWaypoints(cv::Point(550, -660), map_size);
-  CarModel.AddPathWaypoints(cv::Point(700, -800), map_size);
-  CarModel.AddPathWaypoints(cv::Point(850, -700), map_size);
-  CarModel.AddPathWaypoints(cv::Point(900, -450), map_size);
+  CarModel.AddPathWaypoints(cv::Point(200, -250), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(400, -200), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(500, -250), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(500, -450), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(550, -660), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(700, -800), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(850, -700), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(900, -450), base_environment.map_size);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
   while(true) 
   {
     // Create car_drawing
-    cv::Mat car_drawing = cv::Mat::zeros(map_size, CV_8UC3);
+    Map car_environment(cv::Size(1000, 1000));
 
     // Get the Key Presses and store in array
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
 
     CarModel.UpdateMovementState(movement_state_array);
     CarModel.UpdatePosition();
-    CarModel.DrawPosition(&car_drawing);
-    CarModel.AnnotateSensorReading(obstacles, &car_drawing, &map);
-    CarModel.DrawWaypoints(&car_drawing);
-    CarModel.AnnotatePathPursuit(&car_drawing);
+    CarModel.DrawPosition(&car_environment.map_layer);
+
+    CarModel.CalculateSensorReading(base_environment.obstacles);
+    CarModel.DrawSensorReading(&car_environment.map_layer);
+
+    // CarModel.AnnotatePathPursuit(&car_drawing);
 
     while (SDL_PollEvent(&Event)) {
       // System
@@ -126,7 +115,7 @@ int main() {
 
     //Overlay car onto map
     cv::Mat output;
-    cv::bitwise_or(map, car_drawing, output);
+    cv::bitwise_or(base_environment.map_layer, car_environment.map_layer, output);
 
     cv::imshow("Kinematics Simulator", output);
     cv::waitKey(1);
