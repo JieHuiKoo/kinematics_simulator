@@ -101,7 +101,8 @@ int main() {
     CarModel.CalculateSensorReading(base_environment.obstacles);
     CarModel.DrawSensorReading(&car_environment.map_layer);
 
-    // CarModel.AnnotatePathPursuit(&car_drawing);
+    CarModel.UpdatePositionPathPursuit();
+    CarModel.AnnotatePathPursuit(&car_environment.map_layer);
 
     while (SDL_PollEvent(&Event)) {
       // System
