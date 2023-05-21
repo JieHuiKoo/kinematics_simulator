@@ -117,8 +117,14 @@ public:
         else this->turn_amt_Radians = 0;
     }
 
+    void CalculateLookaheadPoint(PoseFrame LookaheadCentre_PoseFrame_GlobalMapFrame)
+    {        
+        this->lookahead_point.x = this->look_ahead_dist_Meters * sin(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.57) +  LookaheadCentre_PoseFrame_GlobalMapFrame.x;
+        this->lookahead_point.y = this->look_ahead_dist_Meters * cos(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.57) +  LookaheadCentre_PoseFrame_GlobalMapFrame.y;
+    }
+
     void CalculateSensorReading(const std::vector<std::array<cv::Point, 2>> &obstacles)
-    {
+    {       
         int num_of_obstacles = obstacles.size();
         PoseFrame TOFsensor1_in_globalMap = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
 
@@ -213,7 +219,8 @@ public:
         PoseFrame centre_of_lookahead_GlobalMapFrame = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
         this->centre_of_lookahead_circle_GlobalMapFrame = cv::Point(centre_of_lookahead_GlobalMapFrame.x, centre_of_lookahead_GlobalMapFrame.y);
         cv::Point centre_of_lookahead_point_OpenCVFrame = ConvertMapToOpenCVPoint(this->centre_of_lookahead_circle_GlobalMapFrame);
-        
+        CalculateLookaheadPoint(centre_of_lookahead_GlobalMapFrame);
+
         this->target_point = FindLookAheadIntersection(this->TOFsensor1_Reading.layer_of_wall_hits.size(), centre_of_lookahead_point_OpenCVFrame);
     }
 
@@ -222,6 +229,8 @@ public:
         cv::circle(*car_drawing, ConvertMapToOpenCVPoint(this->centre_of_lookahead_circle_GlobalMapFrame), this->look_ahead_dist_Meters, cv::Scalar(110, 110, 255), 4);
 
         cv::circle(*car_drawing, this->target_point, 10, cv::Scalar(110, 110, 255), 4);
+
+        cv::circle(*car_drawing, ConvertMapToOpenCVPoint(this->lookahead_point), 10, cv::Scalar(110,110,255), 4);
 
         int num_of_waypoints = this->waypoints.size();
         for (int i=0; i<num_of_waypoints-1; i++)
@@ -306,6 +315,7 @@ private:
 
     // Path Pursuit
     double look_ahead_dist_Meters;
+    cv::Point lookahead_point;
     cv::Point target_point;
     cv::Point centre_of_lookahead_circle_GlobalMapFrame;
 
@@ -335,7 +345,6 @@ private:
 
     PoseFrame TransformFromVehFrameToGlobalMapFrame (PoseFrame input_frame)
     {   
-        // 
         double angle_offset = (atan(input_frame.y/input_frame.x)+1.5708);
 
         cv::Point input_frame_position = cv::Point(input_frame.x, input_frame.y);
