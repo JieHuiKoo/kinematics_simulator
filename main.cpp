@@ -75,14 +75,16 @@ int main() {
   Vehicle CarModel(10, 3, CarModel_initial_pose, 20, 3, base_environment.map_size);
 
   // Define waypoints
-  CarModel.AddPathWaypoints(cv::Point(200, -250), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(400, -200), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(500, -250), base_environment.map_size);
   CarModel.AddPathWaypoints(cv::Point(500, -450), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(550, -660), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(700, -800), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(850, -700), base_environment.map_size);
-  CarModel.AddPathWaypoints(cv::Point(900, -450), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(750, -450), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -400), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -250), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(750, -200), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(200, -200), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(200, -800), base_environment.map_size);
+
+
+
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
 
@@ -95,14 +97,16 @@ int main() {
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
 
     CarModel.UpdateMovementState(movement_state_array);
-    CarModel.UpdatePosition();
-    CarModel.DrawPosition(&car_environment.map_layer);
 
     CarModel.CalculateSensorReading(base_environment.obstacles);
     CarModel.DrawSensorReading(&car_environment.map_layer);
 
-    CarModel.UpdatePositionPathPursuit();
+    CarModel.CalculatePathPursuit();
     CarModel.AnnotatePathPursuit(&car_environment.map_layer);
+
+    CarModel.UpdatePosition();
+    CarModel.DrawPosition(&car_environment.map_layer);
+
 
     while (SDL_PollEvent(&Event)) {
       // System

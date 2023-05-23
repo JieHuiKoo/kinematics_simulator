@@ -17,6 +17,20 @@ public:
     }
 };
 
+class Range {
+public:
+    double min;
+    double max;
+
+    Range() : min(std::numeric_limits<double>::min()), max(std::numeric_limits<double>::max()) {}
+
+    Range (double min, double max)
+    {
+        this->min = min;
+        this->max = max;
+    }
+};
+
 class Vehicle {
 public:
     void DrawPosition(cv::Mat *map) {
@@ -53,30 +67,30 @@ public:
         bool right_fill = false;
 
         // Draw Forward Back Indicators
-        if (this->velocity_MetersPerSec > 0)
+        if (this->current_velocity_MetersPerSec > 0)
         {
             forward_fill = true;
         }
-        else if (this->velocity_MetersPerSec < 0)
+        else if (this->current_velocity_MetersPerSec < 0)
         {
             backward_fill = true;
         }
 
         // Draw Turning indicators
-        if (this->turn_amt_Radians > 0) // Left
+        if (this->current_turn_amt_Radians > 0) // Left
         {
             left_fill = true;
             this->leftIndicator_in_vehFrame.orientation = -0.785398;
             this->rightIndicator_in_vehFrame.orientation = -0.785398;
 
         }
-        else if (this->turn_amt_Radians < 0) // Right
+        else if (this->current_turn_amt_Radians < 0) // Right
         {
             right_fill = true;
             this->leftIndicator_in_vehFrame.orientation = 0.785398;
             this->rightIndicator_in_vehFrame.orientation = 0.785398;
         }
-        else if (this->turn_amt_Radians == 0) // Straight
+        else if (this->current_turn_amt_Radians == 0) // Straight
         {
             right_fill = false;
             this->leftIndicator_in_vehFrame.orientation = 0;
@@ -94,33 +108,33 @@ public:
     void UpdatePosition() {
         
         double veh_distBtwnFrontBackWheel = this->leftIndicator_in_vehFrame.x;
-        double turn_radius_Meters = abs(veh_distBtwnFrontBackWheel/tan(this->turn_amt_Radians)) + this->veh_width/2;
+        double turn_radius_Meters = abs(veh_distBtwnFrontBackWheel/tan(this->current_turn_amt_Radians)) + this->veh_width/2;
         double front_phi_Radians = atan(veh_distBtwnFrontBackWheel/turn_radius_Meters);
 
-        if (this->turn_amt_Radians < 0) front_phi_Radians = -front_phi_Radians;
+        if (this->current_turn_amt_Radians < 0) front_phi_Radians = -front_phi_Radians;
 
-        this->veh_pose_in_globalMap.x = this->veh_pose_in_globalMap.x + this->velocity_MetersPerSec*cos(this->veh_pose_in_globalMap.orientation);
-        this->veh_pose_in_globalMap.y = this->veh_pose_in_globalMap.y + this->velocity_MetersPerSec*sin(this->veh_pose_in_globalMap.orientation);
-        this->veh_pose_in_globalMap.orientation = this->veh_pose_in_globalMap.orientation + this->velocity_MetersPerSec/veh_distBtwnFrontBackWheel*front_phi_Radians;
+        this->veh_pose_in_globalMap.x = this->veh_pose_in_globalMap.x + this->current_velocity_MetersPerSec*cos(this->veh_pose_in_globalMap.orientation);
+        this->veh_pose_in_globalMap.y = this->veh_pose_in_globalMap.y + this->current_velocity_MetersPerSec*sin(this->veh_pose_in_globalMap.orientation);
+        this->veh_pose_in_globalMap.orientation = this->veh_pose_in_globalMap.orientation + this->current_velocity_MetersPerSec/veh_distBtwnFrontBackWheel*front_phi_Radians;
     }
 
     void UpdateMovementState(const std::vector<bool>& movement_state_vector) {
         
         // Update velocity
-        if (movement_state_vector[0]) this->velocity_MetersPerSec = 1.3;
-        else if (movement_state_vector[1]) this->velocity_MetersPerSec = -1.3;
-        else this->velocity_MetersPerSec = 0;
+        if (movement_state_vector[0]) this->current_velocity_MetersPerSec = 1.3;
+        else if (movement_state_vector[1]) this->current_velocity_MetersPerSec = -1.3;
+        else this->current_velocity_MetersPerSec = 0;
 
         // Update turn_amt
-        if (movement_state_vector[2]) this->turn_amt_Radians = 1.309; //75 deg
-        else if (movement_state_vector[3]) this->turn_amt_Radians = -11.309; //75deg
-        else this->turn_amt_Radians = 0;
+        if (movement_state_vector[2]) this->current_turn_amt_Radians = 1.309; //75 deg
+        else if (movement_state_vector[3]) this->current_turn_amt_Radians = -1.309; //75deg
+        else this->current_turn_amt_Radians = 0;
     }
 
     void CalculateLookaheadPoint(PoseFrame LookaheadCentre_PoseFrame_GlobalMapFrame)
     {        
-        this->lookahead_point.x = this->look_ahead_dist_Meters * sin(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.57) +  LookaheadCentre_PoseFrame_GlobalMapFrame.x;
-        this->lookahead_point.y = this->look_ahead_dist_Meters * cos(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.57) +  LookaheadCentre_PoseFrame_GlobalMapFrame.y;
+        this->lookahead_point.x = this->look_ahead_dist_Meters * sin(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.5708) +  LookaheadCentre_PoseFrame_GlobalMapFrame.x;
+        this->lookahead_point.y = this->look_ahead_dist_Meters * cos(LookaheadCentre_PoseFrame_GlobalMapFrame.orientation+1.5708) +  LookaheadCentre_PoseFrame_GlobalMapFrame.y;
     }
 
     void CalculateSensorReading(const std::vector<std::array<cv::Point, 2>> &obstacles)
@@ -156,9 +170,9 @@ public:
                 is_sensor_pointingAt_wall.push_back(false);
             }
 
-            std::cout << i << " Dist To Wall: " << sensor_forward_dist_to_obstacle << " X: " << position_of_wall_hit.x << " Y: " << position_of_wall_hit.y << " Detected: " << is_sensor_pointingAt_wall[i] << std::endl;
+            // std::cout << i << " Dist To Wall: " << sensor_forward_dist_to_obstacle << " X: " << position_of_wall_hit.x << " Y: " << position_of_wall_hit.y << " Detected: " << is_sensor_pointingAt_wall[i] << std::endl;
         }
-        std::cout << "\n\n===\n\n" << std::endl;
+        // std::cout << "\n\n===\n\n" << std::endl;
     }
 
     void DrawSensorReading(cv::Mat *car_layer)
@@ -214,7 +228,7 @@ public:
         }
     }
 
-    void UpdatePositionPathPursuit()
+    void CalculatePathPursuit()
     {
         PoseFrame centre_of_lookahead_GlobalMapFrame = TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame);
         this->centre_of_lookahead_circle_GlobalMapFrame = cv::Point(centre_of_lookahead_GlobalMapFrame.x, centre_of_lookahead_GlobalMapFrame.y);
@@ -222,6 +236,17 @@ public:
         CalculateLookaheadPoint(centre_of_lookahead_GlobalMapFrame);
 
         this->target_point = FindLookAheadIntersection(this->TOFsensor1_Reading.layer_of_wall_hits.size(), centre_of_lookahead_point_OpenCVFrame);
+
+        // this->current_velocity_MetersPerSec = 0.4;
+        
+        // if (this->target_point_rotation_amt_Radians > 1.5708)
+        //     this->target_point_rotation_amt_Radians = 1.4708;
+        // else if (this->target_point_rotation_amt_Radians < -1.5708)
+        //     this->target_point_rotation_amt_Radians = -1.4708;
+        
+        // this->current_turn_amt_Radians = -this->target_point_rotation_amt_Radians;
+
+
     }
 
     void AnnotatePathPursuit(cv::Mat *car_drawing)
@@ -310,13 +335,14 @@ private:
 
     PoseFrame veh_pose_in_globalMap;
 
-    double velocity_MetersPerSec;
-    double turn_amt_Radians; // Left +ve, right-ve
+    double current_velocity_MetersPerSec;
+    double current_turn_amt_Radians; // Left +ve, right-ve
 
     // Path Pursuit
     double look_ahead_dist_Meters;
     cv::Point lookahead_point;
     cv::Point target_point;
+    double target_point_rotation_amt_Radians;
     cv::Point centre_of_lookahead_circle_GlobalMapFrame;
 
     // === Frames ===
@@ -412,21 +438,30 @@ private:
 
     cv::Point FindValidIntersection(std::vector<cv::Point> intersections, cv::Point center_of_lookahead)
     {       
-        double min_rotation_amt = std::numeric_limits<double>::max();;
+        double min_rotation_amt = std::numeric_limits<double>::max();
+        double abs_min_rotation_amt = std::numeric_limits<double>::max();
+
         cv::Point valid_intersection;
 
         for (int i = 0; i<intersections.size(); i++)
         {
             cv::Point intersection = intersections[i];
             double rotation_amt = RotationAmtOfPointFromVeh(intersection);
-            std::cout << int(rotation_amt * (180/M_PI)) << std::endl;
-            std::cout << "Car Rotation" << TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame).orientation << std::endl;
-            if (min_rotation_amt > rotation_amt)
+            std::cout << rotation_amt << std::endl;
+
+            if (abs_min_rotation_amt > abs(rotation_amt))
             {
+                abs_min_rotation_amt = abs(rotation_amt);
+
                 min_rotation_amt = rotation_amt;
+                std::cout << "min: " << min_rotation_amt << std::endl;
+
                 valid_intersection = intersection;
             }
         }
+
+        this->target_point_rotation_amt_Radians = min_rotation_amt;
+        
         return valid_intersection;
     }
 
@@ -434,11 +469,27 @@ private:
     {   
         double rotation_amt;
 
-        if (input_point_OpenCVFrame.x == this->centre_of_lookahead_circle_GlobalMapFrame.x)
-            rotation_amt = 0;
-        else
-            rotation_amt = atan(-(input_point_OpenCVFrame.y - ConvertMapToOpenCVPoint(this->centre_of_lookahead_circle_GlobalMapFrame).y)/ (input_point_OpenCVFrame.x - ConvertMapToOpenCVPoint(this->centre_of_lookahead_circle_GlobalMapFrame).x));
-        return rotation_amt - TransformFromVehFrameToGlobalMapFrame(this->TOFsensor1_in_vehFrame).orientation;
+        // Calculate angle between 2 vectors
+        cv::Point lookahead_point_OpenCV = ConvertMapToOpenCVPoint(this->lookahead_point);
+        cv::Point center_lookahead_point_OpenCV = ConvertMapToOpenCVPoint(this->centre_of_lookahead_circle_GlobalMapFrame);
+        
+        cv::Point lookahead_vector = cv::Point(lookahead_point_OpenCV.x - center_lookahead_point_OpenCV.x, lookahead_point_OpenCV.y - center_lookahead_point_OpenCV.y);
+        cv::Point input_vector = cv::Point(input_point_OpenCVFrame.x - center_lookahead_point_OpenCV.x, input_point_OpenCVFrame.y - center_lookahead_point_OpenCV.y);
+
+        double a = lookahead_vector.x;
+        double b = lookahead_vector.y;
+        double c = input_vector.x;
+        double d = input_vector.y;
+
+        double atanA = atan2(a, b);
+        double atanB = atan2(c, d);
+
+        rotation_amt = atanA - atanB;
+
+        if (rotation_amt > 3.14)
+            rotation_amt = rotation_amt - (3.14*2);
+
+    return rotation_amt;
     }
 
     std::vector<cv::Point> FindBlobCentroids (cv::Mat *image)
