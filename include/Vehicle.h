@@ -237,14 +237,14 @@ public:
 
         this->target_point = FindLookAheadIntersection(this->TOFsensor1_Reading.layer_of_wall_hits.size(), centre_of_lookahead_point_OpenCVFrame);
 
-        // this->current_velocity_MetersPerSec = 0.4;
+        this->current_velocity_MetersPerSec = 0.4;
         
-        // if (this->target_point_rotation_amt_Radians > 1.5708)
-        //     this->target_point_rotation_amt_Radians = 1.4708;
-        // else if (this->target_point_rotation_amt_Radians < -1.5708)
-        //     this->target_point_rotation_amt_Radians = -1.4708;
+        if (this->target_point_rotation_amt_Radians > 1.5708)
+            this->target_point_rotation_amt_Radians = 1.4708;
+        else if (this->target_point_rotation_amt_Radians < -1.5708)
+            this->target_point_rotation_amt_Radians = -1.4708;
         
-        // this->current_turn_amt_Radians = -this->target_point_rotation_amt_Radians;
+        this->current_turn_amt_Radians = -this->target_point_rotation_amt_Radians;
 
 
     }
