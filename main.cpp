@@ -6,8 +6,8 @@
 
 std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
 {
-  // An array that stores the bool state of (1) UP, (2) Down, (3) Left, (4) Right keys
-  std::vector<bool> KeyStateArray(4, false);
+  // An array that stores the bool state of (1) UP, (2) Down, (3) Left, (4) Right keys, (5) Activate path pursuit
+  std::vector<bool> KeyStateArray(5, false);
 
   bool pressed = false;
 
@@ -51,6 +51,13 @@ std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
     }
   }
 
+  if (KeyboardState[SDL_SCANCODE_P])
+  {
+    KeyStateArray[4] = true;
+    pressed = true;
+
+    std::cout << "p";
+  }
   if (pressed) std::cout << "\n === \n";
   
   return KeyStateArray;
@@ -85,10 +92,9 @@ int main() {
   CarModel.AddPathWaypoints(cv::Point(800, -800), base_environment.map_size);
   CarModel.AddPathWaypoints(cv::Point(800, -400), base_environment.map_size);
 
-
-
-
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
+
+  bool path_pursuit_flag = false;
 
   while(true) 
   {
@@ -97,18 +103,24 @@ int main() {
 
     // Get the Key Presses and store in array
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
+    
+    // If keyboard pressed, toggle path pursuit
+    if (movement_state_array[4]) path_pursuit_flag = !path_pursuit_flag;
 
     CarModel.UpdateMovementState(movement_state_array);
 
     CarModel.CalculateSensorReading(base_environment.obstacles);
     CarModel.DrawSensorReading(&car_environment.map_layer);
 
-    CarModel.CalculatePathPursuit();
-    CarModel.AnnotatePathPursuit(&car_environment.map_layer);
+    if (path_pursuit_flag)
+    {
+      CarModel.CalculatePathPursuit();
+      CarModel.AnnotatePathPursuit(&car_environment.map_layer);
+    }
+
 
     CarModel.UpdatePosition();
     CarModel.DrawPosition(&car_environment.map_layer);
-
 
     while (SDL_PollEvent(&Event)) {
       // System
