@@ -77,25 +77,8 @@ public:
         }
 
         // Draw Turning indicators
-        if (this->current_turn_amt_Radians > 0) // Left
-        {
-            left_fill = true;
-            this->leftIndicator_in_vehFrame.orientation = -0.785398;
-            this->rightIndicator_in_vehFrame.orientation = -0.785398;
-
-        }
-        else if (this->current_turn_amt_Radians < 0) // Right
-        {
-            right_fill = true;
-            this->leftIndicator_in_vehFrame.orientation = 0.785398;
-            this->rightIndicator_in_vehFrame.orientation = 0.785398;
-        }
-        else if (this->current_turn_amt_Radians == 0) // Straight
-        {
-            right_fill = false;
-            this->leftIndicator_in_vehFrame.orientation = 0;
-            this->rightIndicator_in_vehFrame.orientation = 0;
-        }
+        this->leftIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
+        this->rightIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
 
         DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, this->veh_size, vehCentre_in_globalMap.orientation, false);
         DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, this->left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation, left_fill);
@@ -447,14 +430,12 @@ private:
         {
             cv::Point intersection = intersections[i];
             double rotation_amt = RotationAmtOfPointFromVeh(intersection);
-            std::cout << rotation_amt << std::endl;
 
             if (abs_min_rotation_amt > abs(rotation_amt))
             {
                 abs_min_rotation_amt = abs(rotation_amt);
 
                 min_rotation_amt = rotation_amt;
-                std::cout << "min: " << min_rotation_amt << std::endl;
 
                 valid_intersection = intersection;
             }
