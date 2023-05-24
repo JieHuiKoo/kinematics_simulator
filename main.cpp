@@ -82,6 +82,8 @@ int main() {
   CarModel.AddPathWaypoints(cv::Point(750, -200), base_environment.map_size);
   CarModel.AddPathWaypoints(cv::Point(200, -200), base_environment.map_size);
   CarModel.AddPathWaypoints(cv::Point(200, -800), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -800), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -400), base_environment.map_size);
 
 
 
