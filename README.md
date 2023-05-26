@@ -1,7 +1,11 @@
 # kinematics_simulator
 
 About:
-This is a kinematics simulator written in C++ to explore the implementation and principles of Ackerman Steering and the Path Pursuit Algorithm.
+This is a kinematics simulator written in C++ to explore the implementation and principles of:
+1) Ackerman Steering
+3) Path Pursuit Algorithm
+4) Transformation Frames
+5) Sonar Sensor Measurements to a known wall
 
 The following libraries are used:
 1) OpenCV (For visualisation)<br>
