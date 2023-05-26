@@ -79,7 +79,7 @@ int main() {
 
   // Define a vehicle model
   PoseFrame CarModel_initial_pose (base_environment.map_size.width/2, -base_environment.map_size.height/2, 0);
-  Vehicle CarModel(10, 3, CarModel_initial_pose, 20, 3, base_environment.map_size);
+  Vehicle CarModel(8, 3, CarModel_initial_pose, 20, 3, base_environment.map_size);
 
   // Define waypoints
   CarModel.AddPathWaypoints(cv::Point(500, -450), base_environment.map_size);
@@ -96,6 +96,9 @@ int main() {
 
   bool path_pursuit_flag = false;
 
+  bool last_p_press = false;
+  bool current_p_press = false;
+
   while(true) 
   {
     // Create car_drawing
@@ -103,10 +106,13 @@ int main() {
 
     // Get the Key Presses and store in array
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
-    
+    current_p_press = movement_state_array[4];
+  
     // If keyboard pressed, toggle path pursuit
-    if (movement_state_array[4]) path_pursuit_flag = !path_pursuit_flag;
+    if (!movement_state_array[4] && last_p_press == true) path_pursuit_flag = !path_pursuit_flag;
+    last_p_press = current_p_press;
 
+    // Update car movement with keyboard controls
     CarModel.UpdateMovementState(movement_state_array);
 
     CarModel.CalculateSensorReading(base_environment.obstacles);
@@ -117,7 +123,6 @@ int main() {
       CarModel.CalculatePathPursuit();
       CarModel.AnnotatePathPursuit(&car_environment.map_layer);
     }
-
 
     CarModel.UpdatePosition();
     CarModel.DrawPosition(&car_environment.map_layer);

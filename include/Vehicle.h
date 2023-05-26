@@ -35,6 +35,9 @@ class Vehicle {
 public:
     void DrawPosition(cv::Mat *map) {
         
+        leftIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
+        rightIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
+
         // Transform vehicle components in veh frame to globalMapFrame
         PoseFrame vehCentre_in_globalMap            = TransformFromVehFrameToGlobalMapFrame(this->centreIndicator_in_vehFrame);
         PoseFrame vehLeftIndicator_in_globalMap     = TransformFromVehFrameToGlobalMapFrame(this->leftIndicator_in_vehFrame);
@@ -77,8 +80,17 @@ public:
         }
 
         // Draw Turning indicators
-        this->leftIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
-        this->rightIndicator_in_vehFrame.orientation = -this->current_turn_amt_Radians;
+
+        if (this->current_turn_amt_Radians > 0) 
+        {
+            left_fill = true;
+           std::cout << this->current_turn_amt_Radians << std::endl;
+        }
+        if (this->current_turn_amt_Radians < 0) 
+        {
+            right_fill = true;
+            std::cout << this->current_turn_amt_Radians << std::endl;
+        }
 
         DrawRotatedRect(map, vehCentreIndicator_in_OpenCVMap, this->veh_size, vehCentre_in_globalMap.orientation, false);
         DrawRotatedRect(map, vehLeftIndicator_in_OpenCVMap, this->left_right_indicator_size, vehLeftIndicator_in_globalMap.orientation, left_fill);
@@ -109,8 +121,8 @@ public:
         else this->current_velocity_MetersPerSec = 0;
 
         // Update turn_amt
-        if (movement_state_vector[2]) this->current_turn_amt_Radians = 1.309; //75 deg
-        else if (movement_state_vector[3]) this->current_turn_amt_Radians = -1.309; //75deg
+        if (movement_state_vector[2]) this->current_turn_amt_Radians = 0.809; 
+        else if (movement_state_vector[3]) this->current_turn_amt_Radians = -0.809; 
         else this->current_turn_amt_Radians = 0;
     }
 
@@ -152,11 +164,8 @@ public:
             {
                 is_sensor_pointingAt_wall.push_back(false);
             }
-
-            // std::cout << i << " Dist To Wall: " << sensor_forward_dist_to_obstacle << " X: " << position_of_wall_hit.x << " Y: " << position_of_wall_hit.y << " Detected: " << is_sensor_pointingAt_wall[i] << std::endl;
         }
-        // std::cout << "\n\n===\n\n" << std::endl;
-    }
+     }
 
     void DrawSensorReading(cv::Mat *car_layer)
     {
@@ -223,13 +232,11 @@ public:
         this->current_velocity_MetersPerSec = 0.4;
         
         if (this->target_point_rotation_amt_Radians > 1.5708)
-            this->target_point_rotation_amt_Radians = 1.4708;
+            this->target_point_rotation_amt_Radians = this->target_point_rotation_amt_Radians - 1.5708;
         else if (this->target_point_rotation_amt_Radians < -1.5708)
-            this->target_point_rotation_amt_Radians = -1.4708;
+            this->target_point_rotation_amt_Radians = this->target_point_rotation_amt_Radians + 1.5708;
         
         this->current_turn_amt_Radians = -this->target_point_rotation_amt_Radians;
-
-
     }
 
     void AnnotatePathPursuit(cv::Mat *car_drawing)
@@ -243,7 +250,7 @@ public:
         int num_of_waypoints = this->waypoints.size();
         for (int i=0; i<num_of_waypoints-1; i++)
         {
-            // Draw the waypoints within an internal map
+            // Draw the waypoints
             cv::line(*car_drawing, ConvertMapToOpenCVPoint(this->waypoints[i]), ConvertMapToOpenCVPoint(this->waypoints[i+1]), 255, 2);
         }
     }
