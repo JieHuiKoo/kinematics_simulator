@@ -1,7 +1,7 @@
 # kinematics_simulator
 
 About:
-This is a kinematics simulator written in C++ to explore the implementation and principles of Ackerman Steering and Transformation Frames.
+This is a kinematics simulator written in C++ to explore the implementation and principles of Ackerman Steering and the Path Pursuit Algorithm.
 
 The following libraries are used:
 1) OpenCV (For visualisation)<br>
@@ -11,5 +11,8 @@ https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
 sudo apt-get -y install libsdl2-dev
 ```
 
-A screenshot of the kinematics simulator.
-![ezgif com-video-to-gif](https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/440f5ec3-7dd5-499a-8246-bc8cd40712a6)
+Ackerman Steering with Keyboard Control<br>
+<img src="https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/38aa9b50-a776-4700-81b7-3f3b468dcf86" width="500">
+
+Path Pursuit Algorithm<br>
+<img src="https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/dff4cf8e-beec-4712-aebc-cc00bb267acf" width="500">
