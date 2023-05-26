@@ -2,11 +2,12 @@
 #include "include/Window.h"
 #include "include/Vehicle.h"
 #include <boost/numeric/odeint.hpp> 
+#include "include/Map.h"
 
 std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
 {
-  // An array that stores the bool state of (1) UP, (2) Down, (3) Left, (4) Right keys
-  std::vector<bool> KeyStateArray(4, false);
+  // An array that stores the bool state of (1) UP, (2) Down, (3) Left, (4) Right keys, (5) Activate path pursuit
+  std::vector<bool> KeyStateArray(5, false);
 
   bool pressed = false;
 
@@ -50,6 +51,13 @@ std::vector<bool> GetKeyStateArray(const unsigned char* KeyboardState)
     }
   }
 
+  if (KeyboardState[SDL_SCANCODE_P])
+  {
+    KeyStateArray[4] = true;
+    pressed = true;
+
+    std::cout << "p";
+  }
   if (pressed) std::cout << "\n === \n";
   
   return KeyStateArray;
@@ -63,45 +71,61 @@ int main() {
   // ====== Declare Variables =====
 
   // Declare Map
-  cv::Size map_size = cv::Size (1000, 1000);
-  cv::Mat map = cv::Mat::zeros(cv::Size (1000, 1000), CV_8UC3); // Declare map of size 1000x1000 pixels
-  // |============== MAP ================|  /|\ +ve y, 90 deg       
-  // | X(0,0)                            |   |         
-  // |                                   | 
-  // |                                   | 
-  // |                                   |    
-  // |                                   |   
-  // |                                   |      
-  // |===================================|          
-  // |--> +ve x, 0deg                           
-  // | Note: Opencv Y axis is inverted
-
-  // Declare Walls of map
-  std::vector<std::array <cv::Point, 2>> obstacles;
-  obstacles.push_back({cv::Point(100, -100), cv::Point(900, -100)});
-  obstacles.push_back({cv::Point(900, -100), cv::Point(900, -900)});
-  obstacles.push_back({cv::Point(900, -900), cv::Point(100, -900)});
-  obstacles.push_back({cv::Point(100, -900), cv::Point(100, -100)});
+  Map base_environment(cv::Size(1000, 1000));
+  base_environment.AddObstacle({cv::Point(100, -100), cv::Point(900, -100)});
+  base_environment.AddObstacle({cv::Point(900, -100), cv::Point(900, -900)});
+  base_environment.AddObstacle({cv::Point(900, -900), cv::Point(100, -900)});
+  base_environment.AddObstacle({cv::Point(100, -900), cv::Point(100, -100)});
 
   // Define a vehicle model
-  PoseFrame CarModel_initial_pose (map.cols/2, -map.rows/2, 0);
-  Vehicle CarModel(10, 3, CarModel_initial_pose, 20);
+  PoseFrame CarModel_initial_pose (base_environment.map_size.width/2, -base_environment.map_size.height/2, 0);
+  Vehicle CarModel(8, 3, CarModel_initial_pose, 20, 3, base_environment.map_size);
+
+  // Define waypoints
+  CarModel.AddPathWaypoints(cv::Point(500, -450), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(750, -450), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -400), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -250), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(750, -200), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(200, -200), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(200, -800), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -800), base_environment.map_size);
+  CarModel.AddPathWaypoints(cv::Point(800, -400), base_environment.map_size);
 
   auto KeyboardState = SDL_GetKeyboardState(nullptr);
+
+  bool path_pursuit_flag = false;
+
+  bool last_p_press = false;
+  bool current_p_press = false;
 
   while(true) 
   {
     // Create car_drawing
-    cv::Mat car_drawing = cv::Mat::zeros(map_size, CV_8UC3);
+    Map car_environment(cv::Size(1000, 1000));
 
     // Get the Key Presses and store in array
     std::vector<bool> movement_state_array = GetKeyStateArray(KeyboardState);
+    current_p_press = movement_state_array[4];
+  
+    // If keyboard pressed, toggle path pursuit
+    if (!movement_state_array[4] && last_p_press == true) path_pursuit_flag = !path_pursuit_flag;
+    last_p_press = current_p_press;
 
+    // Update car movement with keyboard controls
     CarModel.UpdateMovementState(movement_state_array);
-    CarModel.UpdatePosition();
-    CarModel.DrawPosition(&car_drawing);
-    CarModel.AnnotateSensorReading(obstacles, &car_drawing, &map);
 
+    CarModel.CalculateSensorReading(base_environment.obstacles);
+    CarModel.DrawSensorReading(&car_environment.map_layer);
+
+    if (path_pursuit_flag)
+    {
+      CarModel.CalculatePathPursuit();
+      CarModel.AnnotatePathPursuit(&car_environment.map_layer);
+    }
+
+    CarModel.UpdatePosition();
+    CarModel.DrawPosition(&car_environment.map_layer);
 
     while (SDL_PollEvent(&Event)) {
       // System
@@ -115,7 +139,7 @@ int main() {
 
     //Overlay car onto map
     cv::Mat output;
-    cv::bitwise_or(map, car_drawing, output);
+    cv::bitwise_or(base_environment.map_layer, car_environment.map_layer, output);
 
     cv::imshow("Kinematics Simulator", output);
     cv::waitKey(1);
