@@ -14,6 +14,17 @@ https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
 ```
 sudo apt-get -y install libsdl2-dev
 ```
+
+To compile:
+```
+cmake .
+```
+```
+make
+```
+```
+./kinematics_simulator main
+```
 Ackerman Steering with Keyboard Control<br>
 <img src="https://github.com/JieHuiKoo/kinematics_simulator/assets/31171083/c4112454-75b9-47f2-80b3-47fb572a2e81" width="500">
           
